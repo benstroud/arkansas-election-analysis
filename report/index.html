@@ -1,0 +1,211 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Arkansas 2028 Seat Targets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Source+Serif+4:opsz,wght@8..60,400..700&amp;display=swap">
+<style>
+:root {
+  /* Layout: one centered column. Prose at reading width, the chart and table
+     on the same column, with the figures set in mono so they line up. */
+  --ground: #F2F4F3;
+  --surface: #FBFCFB;
+  --ink: #15201E;
+  --muted: #55625F;
+  --rule: #D3DBD8;
+  --rule-strong: #8E9C98;
+  --dem: #1F5FA8;
+  --rep: #A8402A;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-text: "IBM Plex Sans", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0F1514;
+    --surface: #161E1D;
+    --ink: #E4EBE8;
+    --muted: #9BA9A5;
+    --rule: #2B3634;
+    --rule-strong: #5E6E6A;
+    --dem: #7DB0E8;
+    --rep: #E28A72;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0F1514;
+  --surface: #161E1D;
+  --ink: #E4EBE8;
+  --muted: #9BA9A5;
+  --rule: #2B3634;
+  --rule-strong: #5E6E6A;
+  --dem: #7DB0E8;
+  --rep: #E28A72;
+  color-scheme: dark;
+}
+html, body { margin: 0; }
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font: 16px/1.6 var(--font-text);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 48px 64px;
+}
+.page { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+.prose { max-width: 65ch; }
+.kicker { font: 500 12px/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
+h1 { font: 600 clamp(34px, 5vw, 48px)/1.1 var(--font-display); margin: 0 0 16px; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font: 600 26px/1.2 var(--font-display); margin: 0 0 12px; text-wrap: balance; }
+.deck { font-size: 19px; color: var(--muted); margin: 0; max-width: 60ch; }
+.status { display: flex; flex-wrap: wrap; gap: 6px 24px; font: 400 12.5px/1.5 var(--font-mono); color: var(--muted); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 12px 0; margin: 0; }
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0; border-top: 1px solid var(--rule); }
+.summary div { padding: 18px 20px 0 0; }
+.summary div + div { padding-left: 20px; border-left: 1px solid var(--rule); }
+.summary dt { font: 500 12px/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.summary dd { margin: 8px 0 0; font: 600 34px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.summary small { display: block; font-size: 14px; color: var(--muted); margin-top: 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; color: var(--muted); margin: 0 0 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.key { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.key.filled { background: var(--dem); }
+.key.hollow { border: 1.5px solid var(--muted); background: var(--surface); box-sizing: border-box; }
+.figure { margin: 0; overflow-x: auto; }
+.figure figcaption { font-size: 14px; color: var(--muted); margin-top: 12px; max-width: 65ch; }
+svg.chart { display: block; height: auto; font-family: var(--font-text); }
+svg.chart .lbl { font-size: 13px; fill: var(--ink); }
+svg.chart .val { font: 500 12.5px var(--font-mono); fill: var(--ink); }
+svg.chart .axis { font: 400 12px var(--font-mono); fill: var(--muted); }
+svg.chart .grid { stroke: var(--rule); stroke-width: 1; }
+svg.chart .mid { stroke: var(--rule-strong); stroke-width: 1.25; stroke-dasharray: 4 4; }
+svg.chart .conn { stroke: var(--rule-strong); stroke-width: 2; }
+svg.chart .hollow { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5; }
+svg.chart .m-dem { fill: var(--dem); }
+svg.chart .m-rep { fill: var(--rep); }
+.table-wrap { overflow-x: auto; border-top: 1px solid var(--rule); }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 760px; }
+th, td { padding: 10px 12px 10px 0; text-align: left; vertical-align: baseline; border-bottom: 1px solid var(--rule); }
+thead th { font: 500 11.5px/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+tbody th { font-weight: 500; white-space: nowrap; }
+td.num, thead th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 13.5px; }
+td.strong { font-weight: 600; color: var(--ink); }
+td.note { color: var(--muted); font-size: 13.5px; }
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px 32px; margin: 0; }
+.defs div { border-top: 1px solid var(--rule); padding-top: 12px; }
+.defs dt { font-weight: 600; }
+.defs dd { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+ul.sources { margin: 0; padding-left: 18px; color: var(--muted); }
+ul.sources li + li { margin-top: 6px; }
+a { color: var(--dem); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--dem); outline-offset: 3px; border-radius: 2px; }
+.foot { font: 400 12.5px/1.5 var(--font-mono); color: var(--muted); border-top: 1px solid var(--rule); padding-top: 16px; margin: 0; }
+@media (max-width: 640px) {
+  .summary { grid-template-columns: 1fr; }
+  .summary div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--rule); margin-top: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+<main class="page">
+  <header class="prose">
+    <p class="kicker">Arkansas House and Senate &middot; 2024 and 2026 results</p>
+    <h1>Arkansas 2028 Seat Targets</h1>
+    <p class="deck">Republican-held legislative seats on the 2028 ballot, ranked by how close Democrats came in the latest contested race.</p>
+  </header>
+
+  <p class="status">
+    <span>Unofficial 2026 results, last updated 11/10/2026, 4:31 PM CST</span>
+    <span>Page built 11/11/2026</span>
+  </p>
+
+  <section aria-labelledby="summary">
+    <h2 id="summary">The short version</h2>
+    <dl class="summary">
+      <div>
+        <dt>Targets</dt>
+        <dd>44</dd>
+        <small>38 House and 6 Senate seats</small>
+      </div>
+      <div>
+        <dt>No Democrat on the 2026 ballot</dt>
+        <dd>27 of 44</dd>
+        <small>These seats need a candidate before they can flip</small>
+      </div>
+      <div>
+        <dt>Mean House swing</dt>
+        <dd>+9.2</dd>
+        <small>Points toward Democrats; 25 of 25 seats contested both years moved that way</small>
+      </div>
+    </dl>
+    <p class="prose" style="margin-top:20px">Every House seat contested by both parties in both years moved toward Democrats. The statewide shift looks similar in size. The 2026 U.S. Senate race (Cotton against Shoffner) gave Democrats about 43.9% of the two-party vote, against about 34.3% for the 2024 presidential race, a gain of about 9.5 points. The district swings cluster around that figure, so the more useful question is which seats were already closest, not which moved most.</p>
+  </section>
+
+  <section aria-labelledby="shift">
+    <h2 id="shift">Shift by seat</h2>
+    <p class="prose">House seats contested by both parties in 2024 and 2026, sorted by 2026 Democratic share. The dashed line marks 50 percent.</p>
+    <div class="legend">
+      <span><i class="key filled"></i>2026 result, colored by winner</span>
+      <span><i class="key hollow"></i>2024 result</span>
+    </div>
+    <figure class="figure">
+      <svg class="chart" viewBox="0 0 760 674" width="760" role="img" aria-label="Dumbbell chart of Democratic share in 2024 and 2026 for 25 House seats"><line class="grid" x1="150.0" y1="22" x2="150.0" y2="634"/><text class="axis" x="150.0" y="660" text-anchor="middle">0%</text><line class="grid" x1="285.0" y1="22" x2="285.0" y2="634"/><text class="axis" x="285.0" y="660" text-anchor="middle">25%</text><line class="mid" x1="420.0" y1="22" x2="420.0" y2="634"/><text class="axis" x="420.0" y="660" text-anchor="middle">50%</text><line class="grid" x1="555.0" y1="22" x2="555.0" y2="634"/><text class="axis" x="555.0" y="660" text-anchor="middle">75%</text><line class="grid" x1="690.0" y1="22" x2="690.0" y2="634"/><text class="axis" x="690.0" y="660" text-anchor="middle">100%</text><text class="axis" x="712" y="16" text-anchor="start">Swing</text><text class="lbl" x="0" y="46.5">House 9</text><line class="conn" x1="446.5" y1="42.0" x2="525.3" y2="42.0"/><circle class="hollow" cx="446.5" cy="42.0" r="4.5"/><circle class="m-dem" cx="525.3" cy="42.0" r="5.5"/><text class="val" x="712" y="46.0">+14.6</text><text class="lbl" x="0" y="70.5">House 56</text><line class="conn" x1="440.5" y1="66.0" x2="478.3" y2="66.0"/><circle class="hollow" cx="440.5" cy="66.0" r="4.5"/><circle class="m-dem" cx="478.3" cy="66.0" r="5.5"/><text class="val" x="712" y="70.0">+7.0</text><text class="lbl" x="0" y="94.5">House 35</text><line class="conn" x1="423.2" y1="90.0" x2="461.6" y2="90.0"/><circle class="hollow" cx="423.2" cy="90.0" r="4.5"/><circle class="m-dem" cx="461.6" cy="90.0" r="5.5"/><text class="val" x="712" y="94.0">+7.0</text><text class="lbl" x="0" y="118.5">House 19</text><line class="conn" x1="388.7" y1="114.0" x2="451.3" y2="114.0"/><circle class="hollow" cx="388.7" cy="114.0" r="4.5"/><circle class="m-dem" cx="451.3" cy="114.0" r="5.5"/><text class="val" x="712" y="118.0">+11.6</text><text class="lbl" x="0" y="142.5">House 67</text><line class="conn" x1="408.1" y1="138.0" x2="450.2" y2="138.0"/><circle class="hollow" cx="408.1" cy="138.0" r="4.5"/><circle class="m-dem" cx="450.2" cy="138.0" r="5.5"/><text class="val" x="712" y="142.0">+7.8</text><text class="lbl" x="0" y="166.5">House 71</text><line class="conn" x1="389.2" y1="162.0" x2="449.2" y2="162.0"/><circle class="hollow" cx="389.2" cy="162.0" r="4.5"/><circle class="m-dem" cx="449.2" cy="162.0" r="5.5"/><text class="val" x="712" y="166.0">+11.1</text><text class="lbl" x="0" y="190.5">House 13</text><line class="conn" x1="374.6" y1="186.0" x2="447.0" y2="186.0"/><circle class="hollow" cx="374.6" cy="186.0" r="4.5"/><circle class="m-dem" cx="447.0" cy="186.0" r="5.5"/><text class="val" x="712" y="190.0">+13.4</text><text class="lbl" x="0" y="214.5">House 70</text><line class="conn" x1="414.6" y1="210.0" x2="444.8" y2="210.0"/><circle class="hollow" cx="414.6" cy="210.0" r="4.5"/><circle class="m-dem" cx="444.8" cy="210.0" r="5.5"/><text class="val" x="712" y="214.0">+5.6</text><text class="lbl" x="0" y="238.5">House 62</text><line class="conn" x1="400.0" y1="234.0" x2="442.1" y2="234.0"/><circle class="hollow" cx="400.0" cy="234.0" r="4.5"/><circle class="m-dem" cx="442.1" cy="234.0" r="5.5"/><text class="val" x="712" y="238.0">+7.7</text><text class="lbl" x="0" y="262.5">House 15</text><line class="conn" x1="384.4" y1="258.0" x2="440.5" y2="258.0"/><circle class="hollow" cx="384.4" cy="258.0" r="4.5"/><circle class="m-dem" cx="440.5" cy="258.0" r="5.5"/><text class="val" x="712" y="262.0">+10.4</text><text class="lbl" x="0" y="286.5">House 11</text><line class="conn" x1="370.9" y1="282.0" x2="432.4" y2="282.0"/><circle class="hollow" cx="370.9" cy="282.0" r="4.5"/><circle class="m-dem" cx="432.4" cy="282.0" r="5.5"/><text class="val" x="712" y="286.0">+11.4</text><text class="lbl" x="0" y="310.5">House 55</text><line class="conn" x1="374.1" y1="306.0" x2="428.1" y2="306.0"/><circle class="hollow" cx="374.1" cy="306.0" r="4.5"/><circle class="m-dem" cx="428.1" cy="306.0" r="5.5"/><text class="val" x="712" y="310.0">+10.0</text><text class="lbl" x="0" y="334.5">House 10</text><line class="conn" x1="384.4" y1="330.0" x2="424.3" y2="330.0"/><circle class="hollow" cx="384.4" cy="330.0" r="4.5"/><circle class="m-dem" cx="424.3" cy="330.0" r="5.5"/><text class="val" x="712" y="334.0">+7.4</text><text class="lbl" x="0" y="358.5">House 32</text><line class="conn" x1="362.8" y1="354.0" x2="423.8" y2="354.0"/><circle class="hollow" cx="362.8" cy="354.0" r="4.5"/><circle class="m-dem" cx="423.8" cy="354.0" r="5.5"/><text class="val" x="712" y="358.0">+11.3</text><text class="lbl" x="0" y="382.5">House 81</text><line class="conn" x1="364.9" y1="378.0" x2="417.3" y2="378.0"/><circle class="hollow" cx="364.9" cy="378.0" r="4.5"/><circle class="m-rep" cx="417.3" cy="378.0" r="5.5"/><text class="val" x="712" y="382.0">+9.7</text><text class="lbl" x="0" y="406.5">House 14</text><line class="conn" x1="337.9" y1="402.0" x2="410.3" y2="402.0"/><circle class="hollow" cx="337.9" cy="402.0" r="4.5"/><circle class="m-rep" cx="410.3" cy="402.0" r="5.5"/><text class="val" x="712" y="406.0">+13.4</text><text class="lbl" x="0" y="430.5">House 34</text><line class="conn" x1="355.2" y1="426.0" x2="409.2" y2="426.0"/><circle class="hollow" cx="355.2" cy="426.0" r="4.5"/><circle class="m-rep" cx="409.2" cy="426.0" r="5.5"/><text class="val" x="712" y="430.0">+10.0</text><text class="lbl" x="0" y="454.5">House 50</text><line class="conn" x1="344.4" y1="450.0" x2="384.4" y2="450.0"/><circle class="hollow" cx="344.4" cy="450.0" r="4.5"/><circle class="m-rep" cx="384.4" cy="450.0" r="5.5"/><text class="val" x="712" y="454.0">+7.4</text><text class="lbl" x="0" y="478.5">House 36</text><line class="conn" x1="323.3" y1="474.0" x2="371.9" y2="474.0"/><circle class="hollow" cx="323.3" cy="474.0" r="4.5"/><circle class="m-rep" cx="371.9" cy="474.0" r="5.5"/><text class="val" x="712" y="478.0">+8.9</text><text class="lbl" x="0" y="502.5">House 53</text><line class="conn" x1="293.6" y1="498.0" x2="360.6" y2="498.0"/><circle class="hollow" cx="293.6" cy="498.0" r="4.5"/><circle class="m-rep" cx="360.6" cy="498.0" r="5.5"/><text class="val" x="712" y="502.0">+12.4</text><text class="lbl" x="0" y="526.5">House 69</text><line class="conn" x1="305.0" y1="522.0" x2="357.9" y2="522.0"/><circle class="hollow" cx="305.0" cy="522.0" r="4.5"/><circle class="m-rep" cx="357.9" cy="522.0" r="5.5"/><text class="val" x="712" y="526.0">+9.7</text><text class="lbl" x="0" y="550.5">House 51</text><line class="conn" x1="321.7" y1="546.0" x2="353.0" y2="546.0"/><circle class="hollow" cx="321.7" cy="546.0" r="4.5"/><circle class="m-rep" cx="353.0" cy="546.0" r="5.5"/><text class="val" x="712" y="550.0">+5.9</text><text class="lbl" x="0" y="574.5">House 54</text><line class="conn" x1="314.2" y1="570.0" x2="347.1" y2="570.0"/><circle class="hollow" cx="314.2" cy="570.0" r="4.5"/><circle class="m-rep" cx="347.1" cy="570.0" r="5.5"/><text class="val" x="712" y="574.0">+6.1</text><text class="lbl" x="0" y="598.5">House 25</text><line class="conn" x1="308.2" y1="594.0" x2="342.8" y2="594.0"/><circle class="hollow" cx="308.2" cy="594.0" r="4.5"/><circle class="m-rep" cx="342.8" cy="594.0" r="5.5"/><text class="val" x="712" y="598.0">+6.4</text><text class="lbl" x="0" y="622.5">House 24</text><line class="conn" x1="242.3" y1="618.0" x2="269.3" y2="618.0"/><circle class="hollow" cx="242.3" cy="618.0" r="4.5"/><circle class="m-rep" cx="269.3" cy="618.0" r="5.5"/><text class="val" x="712" y="622.0">+5.0</text></svg>
+      <figcaption>Scale runs from 0 to 100 percent of the two-party vote. Right column: change in Democratic share, 2024 to 2026, in points.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="targets">
+    <h2 id="targets">Target list</h2>
+    <p class="prose">Republican-held seats on the 2028 ballot with a contested result, ranked by latest Democratic share, closest first. Figures are percent of the two-party vote. Senate seats up in 2028 have only a 2024 result.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Seat</th>
+            <th scope="col">2028 class</th>
+            <th scope="col" class="num">Latest</th>
+            <th scope="col" class="num">Latest share</th>
+            <th scope="col" class="num">2024</th>
+            <th scope="col" class="num">2026</th>
+            <th scope="col" class="num">Swing</th>
+            <th scope="col">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">House 81</th><td>2028</td><td class="num">2026</td><td class="num strong">49.5</td><td class="num">39.8</td><td class="num">49.5</td><td class="num">+9.7</td><td class="note"></td></tr><tr><th scope="row">House 14</th><td>2028</td><td class="num">2026</td><td class="num strong">48.2</td><td class="num">34.8</td><td class="num">48.2</td><td class="num">+13.4</td><td class="note"></td></tr><tr><th scope="row">House 34</th><td>2028</td><td class="num">2026</td><td class="num strong">48.0</td><td class="num">38.0</td><td class="num">48.0</td><td class="num">+10.0</td><td class="note"></td></tr><tr><th scope="row">House 50</th><td>2028</td><td class="num">2026</td><td class="num strong">43.4</td><td class="num">36.0</td><td class="num">43.4</td><td class="num">+7.4</td><td class="note"></td></tr><tr><th scope="row">Senate 17</th><td>2028 (2024 cycle)</td><td class="num">2024</td><td class="num strong">41.8</td><td class="num">41.8</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 16</th><td>2028</td><td class="num">2026</td><td class="num strong">41.7</td><td class="num">&mdash;</td><td class="num">41.7</td><td class="num">&mdash;</td><td class="note"></td></tr><tr><th scope="row">House 36</th><td>2028</td><td class="num">2026</td><td class="num strong">41.1</td><td class="num">32.1</td><td class="num">41.1</td><td class="num">+8.9</td><td class="note"></td></tr><tr><th scope="row">House 8 (special)</th><td>2028</td><td class="num">2026</td><td class="num strong">40.3</td><td class="num">&mdash;</td><td class="num">40.3</td><td class="num">&mdash;</td><td class="note">2026 special election</td></tr><tr><th scope="row">Senate 20</th><td>2028 (2024 cycle)</td><td class="num">2024</td><td class="num strong">39.1</td><td class="num">39.1</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 53</th><td>2028</td><td class="num">2026</td><td class="num strong">39.0</td><td class="num">26.6</td><td class="num">39.0</td><td class="num">+12.4</td><td class="note"></td></tr><tr><th scope="row">House 69</th><td>2028</td><td class="num">2026</td><td class="num strong">38.5</td><td class="num">28.7</td><td class="num">38.5</td><td class="num">+9.7</td><td class="note"></td></tr><tr><th scope="row">House 51</th><td>2028</td><td class="num">2026</td><td class="num strong">37.6</td><td class="num">31.8</td><td class="num">37.6</td><td class="num">+5.9</td><td class="note"></td></tr><tr><th scope="row">House 54</th><td>2028</td><td class="num">2026</td><td class="num strong">36.5</td><td class="num">30.4</td><td class="num">36.5</td><td class="num">+6.1</td><td class="note"></td></tr><tr><th scope="row">Senate 34</th><td>2028 (2024 cycle)</td><td class="num">2024</td><td class="num strong">36.1</td><td class="num">36.1</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 25</th><td>2028</td><td class="num">2026</td><td class="num strong">35.7</td><td class="num">29.3</td><td class="num">35.7</td><td class="num">+6.4</td><td class="note"></td></tr><tr><th scope="row">House 18</th><td>2028</td><td class="num">2024</td><td class="num strong">35.6</td><td class="num">35.6</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 94</th><td>2028</td><td class="num">2024</td><td class="num strong">34.5</td><td class="num">34.5</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 7</th><td>2028</td><td class="num">2024</td><td class="num strong">33.5</td><td class="num">33.5</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 78</th><td>2028</td><td class="num">2024</td><td class="num strong">32.8</td><td class="num">32.8</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 82</th><td>2028</td><td class="num">2024</td><td class="num strong">32.5</td><td class="num">32.5</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 84</th><td>2028</td><td class="num">2024</td><td class="num strong">32.2</td><td class="num">32.2</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">Senate 1 (special)</th><td>2028 (special)</td><td class="num">2026</td><td class="num strong">31.6</td><td class="num">&mdash;</td><td class="num">31.6</td><td class="num">&mdash;</td><td class="note">2026 special election</td></tr><tr><th scope="row">House 6</th><td>2028</td><td class="num">2024</td><td class="num strong">30.5</td><td class="num">30.5</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 97</th><td>2028</td><td class="num">2024</td><td class="num strong">30.5</td><td class="num">30.5</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 29</th><td>2028</td><td class="num">2026</td><td class="num strong">29.5</td><td class="num">&mdash;</td><td class="num">29.5</td><td class="num">&mdash;</td><td class="note"></td></tr><tr><th scope="row">House 37</th><td>2028</td><td class="num">2024</td><td class="num strong">27.6</td><td class="num">27.6</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 12</th><td>2028</td><td class="num">2024</td><td class="num strong">27.2</td><td class="num">27.2</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 96</th><td>2028</td><td class="num">2024</td><td class="num strong">27.2</td><td class="num">27.2</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">Senate 25</th><td>2028 (2024 cycle)</td><td class="num">2024</td><td class="num strong">25.8</td><td class="num">25.8</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 60</th><td>2028</td><td class="num">2026</td><td class="num strong">25.7</td><td class="num">&mdash;</td><td class="num">25.7</td><td class="num">&mdash;</td><td class="note"></td></tr><tr><th scope="row">House 83</th><td>2028</td><td class="num">2024</td><td class="num strong">24.9</td><td class="num">24.9</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 58</th><td>2028</td><td class="num">2024</td><td class="num strong">24.5</td><td class="num">24.5</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 85</th><td>2028</td><td class="num">2024</td><td class="num strong">24.4</td><td class="num">24.4</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 3</th><td>2028</td><td class="num">2026</td><td class="num strong">23.9</td><td class="num">&mdash;</td><td class="num">23.9</td><td class="num">&mdash;</td><td class="note"></td></tr><tr><th scope="row">House 45</th><td>2028</td><td class="num">2024</td><td class="num strong">23.2</td><td class="num">23.2</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 24</th><td>2028</td><td class="num">2026</td><td class="num strong">22.1</td><td class="num">17.1</td><td class="num">22.1</td><td class="num">+5.0</td><td class="note"></td></tr><tr><th scope="row">House 68</th><td>2028</td><td class="num">2024</td><td class="num strong">21.8</td><td class="num">21.8</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 41</th><td>2028</td><td class="num">2024</td><td class="num strong">20.7</td><td class="num">20.7</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 42</th><td>2028</td><td class="num">2024</td><td class="num strong">20.0</td><td class="num">20.0</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 30</th><td>2028</td><td class="num">2024</td><td class="num strong">19.4</td><td class="num">19.4</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">Senate 22</th><td>2028 (2024 cycle)</td><td class="num">2024</td><td class="num strong">17.8</td><td class="num">17.8</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 57</th><td>2028</td><td class="num">2024</td><td class="num strong">15.3</td><td class="num">15.3</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 92</th><td>2028</td><td class="num">2024</td><td class="num strong">15.2</td><td class="num">15.2</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr><tr><th scope="row">House 86</th><td>2028</td><td class="num">2024</td><td class="num strong">12.2</td><td class="num">12.2</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="note">No 2026 contest; No Democrat on 2026 ballot</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="read">
+    <h2 id="read">How to read the numbers</h2>
+    <dl class="defs">
+      <div><dt>Democratic share</dt><dd>Democratic votes as a percentage of Democratic plus Republican votes. Third-party votes are left out.</dd></div>
+      <div><dt>Latest race</dt><dd>The 2026 result where both parties ran. Otherwise the 2024 result.</dd></div>
+      <div><dt>Swing</dt><dd>The 2026 share minus the 2024 share in the same district. Positive means a shift toward Democrats.</dd></div>
+      <div><dt>Republican-held</dt><dd>Below 50 percent in the latest race. This is not confirmed incumbency.</dd></div>
+      <div><dt>2028 Senate class</dt><dd>The 18 seats contested in 2024, including District 1. Inferred from the 2024 results. Not yet checked against the official roster.</dd></div>
+      <div><dt>Not a forecast</dt><dd>The list ranks seats by how close the last contest was. It does not model 2028 turnout, candidates, or the national environment.</dd></div>
+    </dl>
+  </section>
+
+  <section aria-labelledby="caveats">
+    <h2 id="caveats">Caveats</h2>
+    <ul class="sources prose">
+      <li>The 2026 results are unofficial and may change after certification.</li>
+      <li>2024 was a presidential year and 2026 a midterm. Turnout differs, so swings mix changes in opinion with changes in who voted.</li>
+      <li>Incumbency, retirements, open seats, and 2028 candidates are not included. Seats without a Democrat on the 2026 ballot are ranked but cannot flip without a candidate.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="sources">
+    <h2 id="sources">Sources and code</h2>
+    <ul class="sources">
+      <li>Arkansas Secretary of State, 2026 general election results, unofficial, from the Election Night Reporting site (arkansas.tally-enr.com), downloaded 11/11/2026.</li>
+      <li>MIT Election Data and Science Lab, 2024 precinct-level returns, Harvard Dataverse, <a href="https://doi.org/10.7910/DVN/DODOBJ">doi:10.7910/DVN/DODOBJ</a> and <a href="https://doi.org/10.7910/DVN/NYTPDU">doi:10.7910/DVN/NYTPDU</a>. Licensed CC0.</li>
+      <li>Code, data, and a step-by-step provenance log: <a href="https://github.com/benstroud/arkansas-election-analysis">github.com/benstroud/arkansas-election-analysis</a>. Definitions and method are in METHODS.md in that repository.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Built by scripts/build_report.py from data/derived/. 25 House seats in the chart; 44 targets in the table.</p>
+</main>

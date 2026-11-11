@@ -75,7 +75,7 @@ def summarize(key):
 
 
 # Universe of district keys, keyed by (chamber, district, special); 2024 has no specials.
-universe = sorted({(k[1], k[2], k[3]) for k in results}, key=lambda x: (x[0], x[2], x[1] and 1))
+universe = sorted({(k[1], k[2], k[3]) for k in results}, key=lambda x: (x[0], x[1], x[2]))
 
 rows = []
 for chamber, dist, special in universe:

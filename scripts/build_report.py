@@ -1,0 +1,343 @@
+"""Build the findings page (report/index.html) from the derived CSVs.
+
+Reads data/derived/ar_2024_vs_2026_by_district.csv and data/derived/ar_2028_target_ranking.csv.
+Every number on the page is computed here, so the page can be rebuilt after the data changes.
+
+Usage: python3 -I scripts/build_report.py
+"""
+
+import csv
+import html
+import pathlib
+import statistics
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+DERIVED = ROOT / "data" / "derived"
+OUT = ROOT / "report" / "index.html"
+
+comparison = list(csv.DictReader(open(DERIVED / "ar_2024_vs_2026_by_district.csv", newline="", encoding="utf-8")))
+targets = list(csv.DictReader(open(DERIVED / "ar_2028_target_ranking.csv", newline="", encoding="utf-8")))
+
+# Seats contested by both parties in both years (House only; no Senate seat qualifies).
+both = [r for r in comparison if r["chamber"] == "house" and r["contested_2024"] == "Y" and r["contested_2026"] == "Y"]
+both.sort(key=lambda r: -float(r["d2p_2026"]))
+swings = [float(r["swing_2026_minus_2024"]) for r in both]
+mean_swing = statistics.mean(swings)
+n_gained = sum(1 for s in swings if s > 0)
+
+n_targets = len(targets)
+n_house_targets = sum(1 for t in targets if t["chamber"] == "house")
+n_senate_targets = n_targets - n_house_targets
+n_no_d = sum(1 for t in targets if "no 2026 Democratic candidate" in t["note"])
+
+
+def esc(s):
+    return html.escape(str(s))
+
+
+def fmt(x, signed=False):
+    if x in ("", None):
+        return "&mdash;"
+    v = float(x)
+    return f"{v:+.1f}" if signed else f"{v:.1f}"
+
+
+def seat_label(chamber, district, special=""):
+    name = f"{'House' if chamber == 'house' else 'Senate'} {int(district)}"
+    return name + (" (special)" if special else "")
+
+
+def humanize(note):
+    parts = []
+    if "2026 special" in note:
+        parts.append("2026 special election")
+    if "no 2026 D-vs-R contest" in note:
+        parts.append("No 2026 contest")
+    if "no 2026 Democratic candidate" in note:
+        parts.append("No Democrat on 2026 ballot")
+    return "; ".join(parts)
+
+
+# --- Chart: dumbbell plot of 2024 and 2026 Democratic share, one row per seat ---
+W = 760
+X0, X1 = 150, 690
+TOP, ROW = 30, 24
+H = TOP + len(both) * ROW + 44
+
+
+def sx(v):
+    return X0 + (v / 100.0) * (X1 - X0)
+
+
+rows_svg = []
+for i, r in enumerate(both):
+    y = TOP + i * ROW + ROW / 2
+    v24 = float(r["d2p_2024"])
+    v26 = float(r["d2p_2026"])
+    winner_class = "m-dem" if v26 > 50 else "m-rep"
+    rows_svg.append(
+        f'<text class="lbl" x="0" y="{y + 4.5:.1f}">{esc(seat_label("house", r["district"]))}</text>'
+        f'<line class="conn" x1="{sx(v24):.1f}" y1="{y:.1f}" x2="{sx(v26):.1f}" y2="{y:.1f}"/>'
+        f'<circle class="hollow" cx="{sx(v24):.1f}" cy="{y:.1f}" r="4.5"/>'
+        f'<circle class="{winner_class}" cx="{sx(v26):.1f}" cy="{y:.1f}" r="5.5"/>'
+        f'<text class="val" x="{X1 + 22}" y="{y + 4:.1f}">{fmt(r["swing_2026_minus_2024"], signed=True)}</text>'
+    )
+
+grid_svg = []
+for tick in (0, 25, 50, 75, 100):
+    x = sx(tick)
+    cls = "mid" if tick == 50 else "grid"
+    grid_svg.append(f'<line class="{cls}" x1="{x:.1f}" y1="{TOP - 8}" x2="{x:.1f}" y2="{TOP + len(both) * ROW + 4}"/>')
+    grid_svg.append(f'<text class="axis" x="{x:.1f}" y="{H - 14}" text-anchor="middle">{tick}%</text>')
+grid_svg.append(f'<text class="axis" x="{X1 + 22}" y="{TOP - 14}" text-anchor="start">Swing</text>')
+
+chart = (
+    f'<svg class="chart" viewBox="0 0 {W} {H}" width="{W}" role="img" '
+    f'aria-label="Dumbbell chart of Democratic share in 2024 and 2026 for {len(both)} House seats">'
+    + "".join(grid_svg)
+    + "".join(rows_svg)
+    + "</svg>"
+)
+
+# --- Target table ---
+def short_class(t):
+    if t["chamber"] == "house":
+        return "2028"
+    if "special" in t["class"]:
+        return "2028 (special)"
+    return "2028 (2024 cycle)"
+
+
+table_rows = []
+for t in targets:
+    table_rows.append(
+        "<tr>"
+        f"<th scope=\"row\">{esc(seat_label(t['chamber'], t['district'], 'special' if 'special' in t['note'] else ''))}</th>"
+        f"<td>{esc(short_class(t))}</td>"
+        f"<td class=\"num\">{t['latest_year']}</td>"
+        f"<td class=\"num strong\">{fmt(t['latest_d2p'])}</td>"
+        f"<td class=\"num\">{fmt(t['d2p_2024'])}</td>"
+        f"<td class=\"num\">{fmt(t['d2p_2026'])}</td>"
+        f"<td class=\"num\">{fmt(t['swing_2026_minus_2024'], signed=True)}</td>"
+        f"<td class=\"note\">{esc(humanize(t['note']))}</td>"
+        "</tr>"
+    )
+
+STYLE = """
+:root {
+  /* Layout: one centered column. Prose at reading width, the chart and table
+     on the same column, with the figures set in mono so they line up. */
+  --ground: #F2F4F3;
+  --surface: #FBFCFB;
+  --ink: #15201E;
+  --muted: #55625F;
+  --rule: #D3DBD8;
+  --rule-strong: #8E9C98;
+  --dem: #1F5FA8;
+  --rep: #A8402A;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-text: "IBM Plex Sans", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0F1514;
+    --surface: #161E1D;
+    --ink: #E4EBE8;
+    --muted: #9BA9A5;
+    --rule: #2B3634;
+    --rule-strong: #5E6E6A;
+    --dem: #7DB0E8;
+    --rep: #E28A72;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0F1514;
+  --surface: #161E1D;
+  --ink: #E4EBE8;
+  --muted: #9BA9A5;
+  --rule: #2B3634;
+  --rule-strong: #5E6E6A;
+  --dem: #7DB0E8;
+  --rep: #E28A72;
+  color-scheme: dark;
+}
+html, body { margin: 0; }
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font: 16px/1.6 var(--font-text);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 48px 64px;
+}
+.page { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+.prose { max-width: 65ch; }
+.kicker { font: 500 12px/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
+h1 { font: 600 clamp(34px, 5vw, 48px)/1.1 var(--font-display); margin: 0 0 16px; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font: 600 26px/1.2 var(--font-display); margin: 0 0 12px; text-wrap: balance; }
+.deck { font-size: 19px; color: var(--muted); margin: 0; max-width: 60ch; }
+.status { display: flex; flex-wrap: wrap; gap: 6px 24px; font: 400 12.5px/1.5 var(--font-mono); color: var(--muted); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 12px 0; margin: 0; }
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0; border-top: 1px solid var(--rule); }
+.summary div { padding: 18px 20px 0 0; }
+.summary div + div { padding-left: 20px; border-left: 1px solid var(--rule); }
+.summary dt { font: 500 12px/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.summary dd { margin: 8px 0 0; font: 600 34px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.summary small { display: block; font-size: 14px; color: var(--muted); margin-top: 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; color: var(--muted); margin: 0 0 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.key { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.key.filled { background: var(--dem); }
+.key.hollow { border: 1.5px solid var(--muted); background: var(--surface); box-sizing: border-box; }
+.figure { margin: 0; overflow-x: auto; }
+.figure figcaption { font-size: 14px; color: var(--muted); margin-top: 12px; max-width: 65ch; }
+svg.chart { display: block; height: auto; font-family: var(--font-text); }
+svg.chart .lbl { font-size: 13px; fill: var(--ink); }
+svg.chart .val { font: 500 12.5px var(--font-mono); fill: var(--ink); }
+svg.chart .axis { font: 400 12px var(--font-mono); fill: var(--muted); }
+svg.chart .grid { stroke: var(--rule); stroke-width: 1; }
+svg.chart .mid { stroke: var(--rule-strong); stroke-width: 1.25; stroke-dasharray: 4 4; }
+svg.chart .conn { stroke: var(--rule-strong); stroke-width: 2; }
+svg.chart .hollow { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5; }
+svg.chart .m-dem { fill: var(--dem); }
+svg.chart .m-rep { fill: var(--rep); }
+.table-wrap { overflow-x: auto; border-top: 1px solid var(--rule); }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 760px; }
+th, td { padding: 10px 12px 10px 0; text-align: left; vertical-align: baseline; border-bottom: 1px solid var(--rule); }
+thead th { font: 500 11.5px/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+tbody th { font-weight: 500; white-space: nowrap; }
+td.num, thead th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 13.5px; }
+td.strong { font-weight: 600; color: var(--ink); }
+td.note { color: var(--muted); font-size: 13.5px; }
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px 32px; margin: 0; }
+.defs div { border-top: 1px solid var(--rule); padding-top: 12px; }
+.defs dt { font-weight: 600; }
+.defs dd { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+ul.sources { margin: 0; padding-left: 18px; color: var(--muted); }
+ul.sources li + li { margin-top: 6px; }
+a { color: var(--dem); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--dem); outline-offset: 3px; border-radius: 2px; }
+.foot { font: 400 12.5px/1.5 var(--font-mono); color: var(--muted); border-top: 1px solid var(--rule); padding-top: 16px; margin: 0; }
+@media (max-width: 640px) {
+  .summary { grid-template-columns: 1fr; }
+  .summary div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--rule); margin-top: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+"""
+
+page = f"""<meta name="claude:viewport-fit-sides" content="cover">
+<title>Arkansas 2028 Seat Targets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Source+Serif+4:opsz,wght@8..60,400..700&amp;display=swap">
+<style>{STYLE}</style>
+<main class="page">
+  <header class="prose">
+    <p class="kicker">Arkansas House and Senate &middot; 2024 and 2026 results</p>
+    <h1>Arkansas 2028 Seat Targets</h1>
+    <p class="deck">Republican-held legislative seats on the 2028 ballot, ranked by how close Democrats came in the latest contested race.</p>
+  </header>
+
+  <p class="status">
+    <span>Unofficial 2026 results, last updated 11/10/2026, 4:31 PM CST</span>
+    <span>Page built 11/11/2026</span>
+  </p>
+
+  <section aria-labelledby="summary">
+    <h2 id="summary">The short version</h2>
+    <dl class="summary">
+      <div>
+        <dt>Targets</dt>
+        <dd>{n_targets}</dd>
+        <small>{n_house_targets} House and {n_senate_targets} Senate seats</small>
+      </div>
+      <div>
+        <dt>No Democrat on the 2026 ballot</dt>
+        <dd>{n_no_d} of {n_targets}</dd>
+        <small>These seats need a candidate before they can flip</small>
+      </div>
+      <div>
+        <dt>Mean House swing</dt>
+        <dd>{mean_swing:+.1f}</dd>
+        <small>Points toward Democrats; {n_gained} of {len(both)} seats contested both years moved that way</small>
+      </div>
+    </dl>
+    <p class="prose" style="margin-top:20px">Every House seat contested by both parties in both years moved toward Democrats. The statewide shift looks similar in size. The 2026 U.S. Senate race (Cotton against Shoffner) gave Democrats about 43.9% of the two-party vote, against about 34.3% for the 2024 presidential race, a gain of about 9.5 points. The district swings cluster around that figure, so the more useful question is which seats were already closest, not which moved most.</p>
+  </section>
+
+  <section aria-labelledby="shift">
+    <h2 id="shift">Shift by seat</h2>
+    <p class="prose">House seats contested by both parties in 2024 and 2026, sorted by 2026 Democratic share. The dashed line marks 50 percent.</p>
+    <div class="legend">
+      <span><i class="key filled"></i>2026 result, colored by winner</span>
+      <span><i class="key hollow"></i>2024 result</span>
+    </div>
+    <figure class="figure">
+      {chart}
+      <figcaption>Scale runs from 0 to 100 percent of the two-party vote. Right column: change in Democratic share, 2024 to 2026, in points.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="targets">
+    <h2 id="targets">Target list</h2>
+    <p class="prose">Republican-held seats on the 2028 ballot with a contested result, ranked by latest Democratic share, closest first. Figures are percent of the two-party vote. Senate seats up in 2028 have only a 2024 result.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Seat</th>
+            <th scope="col">2028 class</th>
+            <th scope="col" class="num">Latest</th>
+            <th scope="col" class="num">Latest share</th>
+            <th scope="col" class="num">2024</th>
+            <th scope="col" class="num">2026</th>
+            <th scope="col" class="num">Swing</th>
+            <th scope="col">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {"".join(table_rows)}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="read">
+    <h2 id="read">How to read the numbers</h2>
+    <dl class="defs">
+      <div><dt>Democratic share</dt><dd>Democratic votes as a percentage of Democratic plus Republican votes. Third-party votes are left out.</dd></div>
+      <div><dt>Latest race</dt><dd>The 2026 result where both parties ran. Otherwise the 2024 result.</dd></div>
+      <div><dt>Swing</dt><dd>The 2026 share minus the 2024 share in the same district. Positive means a shift toward Democrats.</dd></div>
+      <div><dt>Republican-held</dt><dd>Below 50 percent in the latest race. This is not confirmed incumbency.</dd></div>
+      <div><dt>2028 Senate class</dt><dd>The 18 seats contested in 2024, including District 1. Inferred from the 2024 results. Not yet checked against the official roster.</dd></div>
+      <div><dt>Not a forecast</dt><dd>The list ranks seats by how close the last contest was. It does not model 2028 turnout, candidates, or the national environment.</dd></div>
+    </dl>
+  </section>
+
+  <section aria-labelledby="caveats">
+    <h2 id="caveats">Caveats</h2>
+    <ul class="sources prose">
+      <li>The 2026 results are unofficial and may change after certification.</li>
+      <li>2024 was a presidential year and 2026 a midterm. Turnout differs, so swings mix changes in opinion with changes in who voted.</li>
+      <li>Incumbency, retirements, open seats, and 2028 candidates are not included. Seats without a Democrat on the 2026 ballot are ranked but cannot flip without a candidate.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="sources">
+    <h2 id="sources">Sources and code</h2>
+    <ul class="sources">
+      <li>Arkansas Secretary of State, 2026 general election results, unofficial, from the Election Night Reporting site (arkansas.tally-enr.com), downloaded 11/11/2026.</li>
+      <li>MIT Election Data and Science Lab, 2024 precinct-level returns, Harvard Dataverse, <a href="https://doi.org/10.7910/DVN/DODOBJ">doi:10.7910/DVN/DODOBJ</a> and <a href="https://doi.org/10.7910/DVN/NYTPDU">doi:10.7910/DVN/NYTPDU</a>. Licensed CC0.</li>
+      <li>Code, data, and a step-by-step provenance log: <a href="https://github.com/benstroud/arkansas-election-analysis">github.com/benstroud/arkansas-election-analysis</a>. Definitions and method are in METHODS.md in that repository.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Built by scripts/build_report.py from data/derived/. {len(both)} House seats in the chart; {n_targets} targets in the table.</p>
+</main>
+"""
+
+OUT.parent.mkdir(parents=True, exist_ok=True)
+OUT.write_text(page, encoding="utf-8")
+print(f"wrote {OUT} ({len(page)} bytes): {len(both)} chart seats, {n_targets} targets, mean swing {mean_swing:+.2f}")
