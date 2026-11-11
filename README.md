@@ -4,6 +4,8 @@ This project identifies Arkansas House and Senate seats that Democrats could pla
 
 **Status:** Results use the Secretary of State's 2026 election-night file, marked "Unofficial," last updated 11/10/2026. They may change once certified. This is a ranking of how close seats were, not a forecast.
 
+**Findings page:** https://benstroud.github.io/arkansas-election-analysis/ (built from `data/derived/` by `scripts/build_report.py`).
+
 ## Results
 
 Targets are Republican-held seats on the 2028 ballot, ranked by Democratic two-party share in the latest contested race. Closer to 50% is listed first. The full list is in `data/derived/ar_2028_target_ranking.csv`.
@@ -76,6 +78,7 @@ The derived files in `data/derived/` are already committed, so you can read the 
 | `data/derived/ar_2028_target_ranking.csv` | The ranked target list. Start here. |
 | `data/derived/ar_2024_vs_2026_by_district.csv` | Every House district and Senate seat, with 2024 and 2026 Democratic share, swing, and flags. |
 | `data/derived/ar_2024_state_legislative.csv` | Arkansas 2024 House and Senate rows from MEDSL. |
+| `docs/index.html` | The findings page, served by GitHub Pages. Rebuild with `scripts/build_report.py`. |
 | `METHODS.md` | Definitions, pipeline, and caveats. |
 | `PROVENANCE.md` | Sources, checksums, and a dated log of steps. |
 
