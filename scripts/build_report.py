@@ -1,4 +1,4 @@
-"""Build the findings page (report/index.html) from the derived CSVs.
+"""Build the findings page (docs/index.html) from the derived CSVs.
 
 Reads data/derived/ar_2024_vs_2026_by_district.csv and data/derived/ar_2028_target_ranking.csv.
 Every number on the page is computed here, so the page can be rebuilt after the data changes.
@@ -13,7 +13,7 @@ import statistics
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DERIVED = ROOT / "data" / "derived"
-OUT = ROOT / "report" / "index.html"
+OUT = ROOT / "docs" / "index.html"
 
 comparison = list(csv.DictReader(open(DERIVED / "ar_2024_vs_2026_by_district.csv", newline="", encoding="utf-8")))
 targets = list(csv.DictReader(open(DERIVED / "ar_2028_target_ranking.csv", newline="", encoding="utf-8")))
