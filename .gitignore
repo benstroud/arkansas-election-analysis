@@ -1,0 +1,6 @@
+# Too large for GitHub (1.2 GB; GitHub's per-file limit is 100 MB).
+# Re-download from Harvard Dataverse, file ID 13730906 (see README.md, Data sources).
+data/raw/medsl2024/STATE_precinct_general.csv
+
+# macOS
+.DS_Store
