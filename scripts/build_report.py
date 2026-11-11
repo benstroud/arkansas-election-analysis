@@ -8,8 +8,13 @@ Usage: python3 -I scripts/build_report.py
 
 import csv
 import html
+import math
 import pathlib
 import statistics
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from tiger_reader import read_zip_shapefile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DERIVED = ROOT / "data" / "derived"
@@ -123,6 +128,161 @@ for t in targets:
         "</tr>"
     )
 
+# --- Map: district outlines from the 2024 TIGER/Line legislative files ---
+# The 2022 and 2024 files describe the same 2021 plan (areas differ by at most 0.08%,
+# centroids by at most 0.0003 degrees), so the newer vintage is used.
+MAP_WIDTH = 540
+MAP_EPS = 0.0008  # degrees (about 90 m), invisible at map scale, cuts the point count
+ZIPS = {
+    "house": ROOT / "data" / "raw" / "tiger2024_sldl" / "tl_2024_05_sldl.zip",
+    "senate": ROOT / "data" / "raw" / "tiger2024_sldu" / "tl_2024_05_sldu.zip",
+}
+DISTRICT_FIELD = {"house": "SLDLST", "senate": "SLDUST"}
+CHAMBER_NAME = {"house": "House", "senate": "Senate"}
+TARGET_SET = {(t["chamber"], int(t["district"])) for t in targets}
+
+
+def perp_dist(p, a, b):
+    (x, y), (x1, y1), (x2, y2) = p, a, b
+    dx, dy = x2 - x1, y2 - y1
+    if dx == 0 and dy == 0:
+        return math.hypot(x - x1, y - y1)
+    t = max(0.0, min(1.0, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)))
+    return math.hypot(x - (x1 + t * dx), y - (y1 + t * dy))
+
+
+def simplify(pts, eps):
+    """Douglas-Peucker on a closed ring; keeps the first and last points."""
+    n = len(pts)
+    if n < 4:
+        return pts
+    keep = [False] * n
+    keep[0] = keep[-1] = True
+    stack = [(0, n - 1)]
+    while stack:
+        s, e = stack.pop()
+        dmax, idx = 0.0, None
+        for i in range(s + 1, e):
+            d = perp_dist(pts[i], pts[s], pts[e])
+            if d > dmax:
+                dmax, idx = d, i
+        if idx is not None and dmax > eps:
+            keep[idx] = True
+            stack.append((s, idx))
+            stack.append((idx, e))
+    return [p for p, k in zip(pts, keep) if k]
+
+
+def ring_area_centroid(ring):
+    A = cx = cy = 0.0
+    for i in range(len(ring) - 1):
+        x0, y0 = ring[i]
+        x1, y1 = ring[i + 1]
+        c = x0 * y1 - x1 * y0
+        A += c
+        cx += (x0 + x1) * c
+        cy += (y0 + y1) * c
+    A /= 2.0
+    if A == 0:
+        return 0.0, ring[0]
+    return abs(A), (cx / (6 * A), cy / (6 * A))
+
+
+def latest_shares(chamber):
+    """Latest Democratic share per district: 2026 where contested, otherwise 2024."""
+    out = {}
+    for r in comparison:
+        if r["chamber"] != chamber:
+            continue
+        d = int(r["district"])
+        if r["contested_2026"] == "Y":
+            out[d] = float(r["d2p_2026"])
+        elif r["contested_2024"] == "Y":
+            out[d] = float(r["d2p_2024"])
+    return out
+
+
+def step_class(share):
+    """Map a share to one of ten 5-point steps on each side of 50, or 'nc' for no contest."""
+    if share is None:
+        return "nc"
+    t = (share - 50.0) / 50.0
+    step = min(9, int(abs(t) * 10))
+    return ("d" if t >= 0 else "r") + str(step)
+
+
+def district_map(chamber):
+    shapes, recs = read_zip_shapefile(ZIPS[chamber])
+    field = DISTRICT_FIELD[chamber]
+    shares = latest_shares(chamber)
+    parts = []
+    lon_min = lat_min = float("inf")
+    lon_max = lat_max = float("-inf")
+    for shape, rec in zip(shapes, recs):
+        d = int(rec[field])
+        rings = [simplify(ring, MAP_EPS) for ring in shape if len(ring) >= 4]
+        for ring in rings:
+            for lon, lat in ring:
+                lon_min, lon_max = min(lon_min, lon), max(lon_max, lon)
+                lat_min, lat_max = min(lat_min, lat), max(lat_max, lat)
+        parts.append((d, rings))
+
+    cos_lat = math.cos(math.radians((lat_min + lat_max) / 2))
+    scale = MAP_WIDTH / ((lon_max - lon_min) * cos_lat)
+    height = (lat_max - lat_min) * scale
+
+    def proj(lon, lat):
+        return (lon - lon_min) * cos_lat * scale, (lat_max - lat) * scale
+
+    paths, labels = [], []
+    for d, rings in sorted(parts):
+        share = shares.get(d)
+        cls = step_class(share)
+        is_target = (chamber, d) in TARGET_SET
+        if is_target:
+            cls += " tgt"
+        if share is None:
+            tip = f"{CHAMBER_NAME[chamber]} {d}: no race between a Democrat and a Republican in the latest year"
+        else:
+            tip = f"{CHAMBER_NAME[chamber]} {d}: {share:.1f}% Democratic in the latest race"
+        d_attr = " ".join(
+            "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in (proj(lon, lat) for lon, lat in ring)) + " Z"
+            for ring in rings
+        )
+        paths.append(f'<path class="{cls}" d="{d_attr}"><title>{esc(tip)}</title></path>')
+        if is_target and rings:
+            _, (clon, clat) = max((ring_area_centroid(r) for r in rings), key=lambda a: a[0])
+            x, y = proj(clon, clat)
+            labels.append(f'<text class="tl" x="{x:.1f}" y="{y:.1f}">{d}</text>')
+
+    return (
+        f'<svg class="map" viewBox="0 0 {MAP_WIDTH} {height:.1f}" role="img" '
+        f'aria-label="Map of {CHAMBER_NAME[chamber]} districts, filled by latest Democratic share">'
+        + "".join(paths) + "".join(labels) + "</svg>"
+    )
+
+
+STEP_CSS = "".join(
+    f".d{s}{{fill:color-mix(in srgb, var(--dem) {20 + 8 * s}%, var(--surface));}}"
+    f".r{s}{{fill:color-mix(in srgb, var(--rep) {20 + 8 * s}%, var(--surface));}}"
+    f".sw.d{s}{{background:color-mix(in srgb, var(--dem) {20 + 8 * s}%, var(--surface));}}"
+    f".sw.r{s}{{background:color-mix(in srgb, var(--rep) {20 + 8 * s}%, var(--surface));}}"
+    for s in range(10)
+) + ".nc{fill:var(--rule);} .sw.nc{background:var(--rule);}"
+
+MAP_CSS = """
+svg.map { width: 100%; height: auto; display: block; }
+svg.map path { stroke: var(--surface); stroke-width: 0.6; stroke-linejoin: round; }
+svg.map path.tgt { stroke: var(--ink); stroke-width: 1.6; }
+svg.map text.tl { font: 600 10.5px var(--font-mono); fill: var(--ink); text-anchor: middle; dominant-baseline: middle; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.maps { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; }
+.mapfig { margin: 0; }
+.mapfig figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; }
+.scale { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font: 400 12.5px/1.4 var(--font-mono); color: var(--muted); margin: 0 0 18px; }
+.scale .strip { display: inline-flex; }
+.sw { display: inline-block; width: 14px; height: 12px; }
+"""
+
 STYLE = """
 :root {
   /* Layout: one centered column. Prose at reading width, the chart and table
@@ -232,7 +392,7 @@ page = f"""<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Source+Serif+4:opsz,wght@8..60,400..700&amp;display=swap">
-<style>{STYLE}</style>
+<style>{STYLE}{STEP_CSS}{MAP_CSS}</style>
 <main class="page">
   <header class="prose">
     <p class="kicker">Arkansas House and Senate &middot; 2024 and 2026 results</p>
@@ -301,6 +461,27 @@ page = f"""<meta name="claude:viewport-fit-sides" content="cover">
           {"".join(table_rows)}
         </tbody>
       </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="maps">
+    <h2 id="maps">Where the seats are</h2>
+    <p class="prose">Each district is filled by its latest Democratic share: 2026 where contested, otherwise 2024. Outlined districts are 2028 targets and carry their number. Gray districts had no race between a Democrat and a Republican in the latest year. Hover a district for its exact share.</p>
+    <div class="scale" aria-hidden="true">
+      <span>Republican</span>
+      <span class="strip">{"".join(f'<i class="sw r{s}"></i>' for s in range(9, -1, -1))}{"".join(f'<i class="sw d{s}"></i>' for s in range(10))}</span>
+      <span>Democratic</span>
+      <span><i class="sw nc"></i> No contest</span>
+    </div>
+    <div class="maps">
+      <figure class="mapfig">
+        {district_map("house")}
+        <figcaption>House, 100 districts</figcaption>
+      </figure>
+      <figure class="mapfig">
+        {district_map("senate")}
+        <figcaption>Senate, 35 seats. Seat 1 shows its 2026 special election.</figcaption>
+      </figure>
     </div>
   </section>
 
