@@ -458,6 +458,51 @@ a:focus-visible { outline: 2px solid var(--dem); outline-offset: 3px; border-rad
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 """
 
+def senate_chart():
+    """One marker per Senate seat with a contested result, at its latest contested race. No cross-year comparison."""
+    shares = latest_shares("senate")
+    meta = {}
+    for r in comparison:
+        if r["chamber"] != "senate":
+            continue
+        d = int(r["district"])
+        if r["contested_2026"] == "Y":
+            meta[d] = "2026 special" if r["special_2026"] else "2026"
+        elif r["contested_2024"] == "Y" and d not in meta:
+            meta[d] = "2024"
+    rows = sorted(((d, s, meta.get(d, "")) for d, s in shares.items()), key=lambda x: -x[1])
+
+    W, X0, X1, TOP, ROW = 760, 170, 690, 30, 26
+    H = TOP + len(rows) * ROW + 44
+
+    def x_of(v):
+        return X0 + (v / 100.0) * (X1 - X0)
+
+    parts = []
+    for tick in (0, 25, 50, 75, 100):
+        x = x_of(tick)
+        cls = "mid" if tick == 50 else "grid"
+        parts.append(f'<line class="{cls}" x1="{x:.1f}" y1="{TOP - 8}" x2="{x:.1f}" y2="{TOP + len(rows) * ROW + 4}"/>')
+        parts.append(f'<text class="axis" x="{x:.1f}" y="{H - 14}" text-anchor="middle">{tick}%</text>')
+    parts.append(f'<text class="axis" x="110" y="{TOP - 14}">Race</text>')
+    parts.append(f'<text class="axis" x="{X1 + 22}" y="{TOP - 14}">Share</text>')
+    for i, (d, s, yr) in enumerate(rows):
+        y = TOP + i * ROW + ROW / 2
+        marker = "m-dem" if s > 50 else "m-rep"
+        parts.append(
+            f'<a href="{ballotpedia_senate_url(d)}" target="_blank" rel="noopener">'
+            f'<text class="lbl" x="0" y="{y + 4.5:.1f}">Senate {d}</text></a>'
+            f'<text class="axis" x="110" y="{y + 4:.1f}">{esc(yr)}</text>'
+            f'<circle class="{marker}" cx="{x_of(s):.1f}" cy="{y:.1f}" r="5.5"/>'
+            f'<text class="val" x="{X1 + 22}" y="{y + 4:.1f}">{s:.1f}</text>'
+        )
+    return (
+        f'<svg class="chart" viewBox="0 0 {W} {H}" width="{W}" role="img" '
+        f'aria-label="Democratic share in the latest contested race for {len(rows)} Senate seats">'
+        + "".join(parts) + "</svg>"
+    )
+
+
 page = f"""<meta name="claude:viewport-fit-sides" content="cover">
 <title>Arkansas 2028 Seat Targets</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -508,6 +553,15 @@ page = f"""<meta name="claude:viewport-fit-sides" content="cover">
     <figure class="figure">
       {chart}
       <figcaption>Scale runs from 0 to 100 percent of the two-party vote. Right column: change in Democratic share, 2024 to 2026, in points.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="senate">
+    <h2 id="senate">Senate seats</h2>
+    <p class="prose">The latest contested race for each Senate seat with both a Democrat and a Republican on the ballot. Seats up in 2028 were last contested in 2024, and seats up in 2030 in 2026. Results are not compared across years, since no seat was contested in both.</p>
+    <figure class="figure">
+      {senate_chart()}
+      <figcaption>Scale runs from 0 to 100 percent of the two-party vote. Marker color shows the winner. Senate District 1 shows its 2026 special election.</figcaption>
     </figure>
   </section>
 
