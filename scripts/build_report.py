@@ -25,6 +25,11 @@ def ballotpedia_url(district):
     """Ballotpedia page for an Arkansas House district (pattern checked for District 81)."""
     return f"https://ballotpedia.org/Arkansas_House_of_Representatives_District_{district}"
 
+
+def ballotpedia_senate_url(district):
+    """Ballotpedia page for an Arkansas Senate district (pattern seen for District 1)."""
+    return f"https://ballotpedia.org/Arkansas_State_Senate_District_{district}"
+
 comparison = list(csv.DictReader(open(DERIVED / "ar_2024_vs_2026_by_district.csv", newline="", encoding="utf-8")))
 targets = list(csv.DictReader(open(DERIVED / "ar_2028_target_ranking.csv", newline="", encoding="utf-8")))
 
@@ -298,8 +303,8 @@ def district_map(chamber):
             for ring in rings
         )
         path_el = f'<path class="{cls}" d="{d_attr}"><title>{esc(tip)}</title></path>'
-        if chamber == "house":
-            path_el = f'<a href="{ballotpedia_url(d)}" target="_blank" rel="noopener">{path_el}</a>'
+        url = ballotpedia_url(d) if chamber == "house" else ballotpedia_senate_url(d)
+        path_el = f'<a href="{url}" target="_blank" rel="noopener">{path_el}</a>'
         paths.append(path_el)
         if is_target and rings:
             _, (clon, clat) = max((ring_area_centroid(r) for r in rings), key=lambda a: a[0])
@@ -532,7 +537,7 @@ page = f"""<meta name="claude:viewport-fit-sides" content="cover">
 
   <section aria-labelledby="maps">
     <h2 id="maps">Where the seats are</h2>
-    <p class="prose">Each district is filled by its latest Democratic share: 2026 where contested, otherwise 2024. Outlined districts are 2028 targets and carry their number. Hatched districts had no race between a Democrat and a Republican in the latest year: red hatch means no Democrat ran, blue hatch means no Republican ran. Hover a district for its exact share. Click a House district to open its Ballotpedia page.</p>
+    <p class="prose">Each district is filled by its latest Democratic share: 2026 where contested, otherwise 2024. Outlined districts are 2028 targets and carry their number. Hatched districts had no race between a Democrat and a Republican in the latest year: red hatch means no Democrat ran, blue hatch means no Republican ran. Hover a district for its exact share. Click a district to open its Ballotpedia page.</p>
     <div class="scale" aria-hidden="true">
       <span>Republican</span>
       <span class="strip">{"".join(f'<i class="sw r{s}"></i>' for s in range(9, -1, -1))}{"".join(f'<i class="sw d{s}"></i>' for s in range(10))}</span>
