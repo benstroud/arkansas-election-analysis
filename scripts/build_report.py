@@ -20,6 +20,11 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 DERIVED = ROOT / "data" / "derived"
 OUT = ROOT / "docs" / "index.html"
 
+
+def ballotpedia_url(district):
+    """Ballotpedia page for an Arkansas House district (pattern checked for District 81)."""
+    return f"https://ballotpedia.org/Arkansas_House_of_Representatives_District_{district}"
+
 comparison = list(csv.DictReader(open(DERIVED / "ar_2024_vs_2026_by_district.csv", newline="", encoding="utf-8")))
 targets = list(csv.DictReader(open(DERIVED / "ar_2028_target_ranking.csv", newline="", encoding="utf-8")))
 
@@ -105,6 +110,13 @@ chart = (
 )
 
 # --- Target table ---
+def seat_link(t):
+    label = esc(seat_label(t["chamber"], t["district"], "special" if "special" in t["note"] else ""))
+    if t["chamber"] != "house":
+        return label
+    return f'<a href="{ballotpedia_url(int(t["district"]))}" target="_blank" rel="noopener">{label}</a>'
+
+
 def short_class(t):
     if t["chamber"] == "house":
         return "2028"
@@ -117,7 +129,7 @@ table_rows = []
 for t in targets:
     table_rows.append(
         "<tr>"
-        f"<th scope=\"row\">{esc(seat_label(t['chamber'], t['district'], 'special' if 'special' in t['note'] else ''))}</th>"
+        f"<th scope=\"row\">{seat_link(t)}</th>"
         f"<td>{esc(short_class(t))}</td>"
         f"<td class=\"num\">{t['latest_year']}</td>"
         f"<td class=\"num strong\">{fmt(t['latest_d2p'])}</td>"
@@ -249,7 +261,10 @@ def district_map(chamber):
             "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in (proj(lon, lat) for lon, lat in ring)) + " Z"
             for ring in rings
         )
-        paths.append(f'<path class="{cls}" d="{d_attr}"><title>{esc(tip)}</title></path>')
+        path_el = f'<path class="{cls}" d="{d_attr}"><title>{esc(tip)}</title></path>'
+        if chamber == "house":
+            path_el = f'<a href="{ballotpedia_url(d)}" target="_blank" rel="noopener">{path_el}</a>'
+        paths.append(path_el)
         if is_target and rings:
             _, (clon, clat) = max((ring_area_centroid(r) for r in rings), key=lambda a: a[0])
             x, y = proj(clon, clat)
@@ -281,6 +296,11 @@ svg.map text.tl { font: 600 10.5px var(--font-mono); fill: var(--ink); text-anch
 .scale { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font: 400 12.5px/1.4 var(--font-mono); color: var(--muted); margin: 0 0 18px; }
 .scale .strip { display: inline-flex; }
 .sw { display: inline-block; width: 14px; height: 12px; }
+svg.map a { cursor: pointer; }
+svg.map a:hover path, svg.map a:focus-visible path { stroke: var(--ink); stroke-width: 1.2; }
+svg.map a:focus-visible { outline: none; }
+tbody th a { color: var(--ink); text-decoration-color: var(--rule-strong); }
+tbody th a:hover { color: var(--dem); }
 """
 
 STYLE = """
