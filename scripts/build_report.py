@@ -86,7 +86,8 @@ for i, r in enumerate(both):
     v26 = float(r["d2p_2026"])
     winner_class = "m-dem" if v26 > 50 else "m-rep"
     rows_svg.append(
-        f'<text class="lbl" x="0" y="{y + 4.5:.1f}">{esc(seat_label("house", r["district"]))}</text>'
+        f'<a href="{ballotpedia_url(int(r["district"]))}" target="_blank" rel="noopener">'
+        f'<text class="lbl" x="0" y="{y + 4.5:.1f}">{esc(seat_label("house", r["district"]))}</text></a>'
         f'<line class="conn" x1="{sx(v24):.1f}" y1="{y:.1f}" x2="{sx(v26):.1f}" y2="{y:.1f}"/>'
         f'<circle class="hollow" cx="{sx(v24):.1f}" cy="{y:.1f}" r="4.5"/>'
         f'<circle class="{winner_class}" cx="{sx(v26):.1f}" cy="{y:.1f}" r="5.5"/>'
@@ -301,6 +302,9 @@ svg.map a:hover path, svg.map a:focus-visible path { stroke: var(--ink); stroke-
 svg.map a:focus-visible { outline: none; }
 tbody th a { color: var(--ink); text-decoration-color: var(--rule-strong); }
 tbody th a:hover { color: var(--dem); }
+svg.chart a { cursor: pointer; }
+svg.chart a:hover text.lbl, svg.chart a:focus-visible text.lbl { fill: var(--dem); text-decoration: underline; }
+svg.chart a:focus-visible { outline: none; }
 """
 
 STYLE = """
