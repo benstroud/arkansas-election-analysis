@@ -46,7 +46,7 @@ Requirements: Python 3. The scripts use only the standard library.
 
 Raw inputs:
 - `data/raw/sos/sos_2026_general_and_judicial_runoff.csv` is tracked.
-- `data/raw/medsl2024/STATE_precinct_general.csv` is **not tracked** because it is 1.2 GB. Download it from Harvard Dataverse, file ID 13730906 (`https://dataverse.harvard.edu/api/access/datafile/13730906`), and save it at that path. Its SHA-256 is recorded in [PROVENANCE.md](PROVENANCE.md).
+- `data/raw/medsl2024/STATE_precinct_general.csv` is **not tracked** because it is 1.2 GB. Download it from the [data-v1 release](https://github.com/benstroud/arkansas-election-analysis/releases/tag/data-v1) (`https://github.com/benstroud/arkansas-election-analysis/releases/download/data-v1/STATE_precinct_general.csv`), or from the original source, Harvard Dataverse file ID 13730906 (`https://dataverse.harvard.edu/api/access/datafile/13730906`). Save it at that path. Its SHA-256 is `e2bf1177d0efcde7d9a828b898e44dfb6de1df766b20637f6bb71b168c3b23ec`, recorded in [PROVENANCE.md](PROVENANCE.md).
 
 Run from the project root:
 
