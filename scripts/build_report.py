@@ -224,10 +224,45 @@ def step_class(share):
     return ("d" if t >= 0 else "r") + str(step)
 
 
+def gray_kinds(chamber):
+    """For districts with no D-vs-R race in either year, say which party was missing from the 2026 ballot."""
+    out = {}
+    for r in comparison:
+        if r["chamber"] != chamber:
+            continue
+        if r["contested_2026"] == "Y" or r["contested_2024"] == "Y":
+            continue
+        # Every House seat is on the 2026 ballot. A Senate seat with no 2026 candidates
+        # is in the 2028 class and was on the 2024 ballot, so use the 2024 votes.
+        on_2026 = chamber == "house" or r["dem_cand_2026"] == "Y" or r["rep_cand_2026"] == "Y"
+        if on_2026:
+            dem = r["dem_cand_2026"] == "Y"
+            rep = r["rep_cand_2026"] == "Y"
+        else:
+            dem = int(r["d_votes_2024"] or 0) > 0
+            rep = int(r["r_votes_2024"] or 0) > 0
+        if dem and not rep:
+            kind = "nr"  # Democrat only: no Republican on the ballot
+        elif rep and not dem:
+            kind = "nd"  # Republican only: no Democrat on the ballot
+        else:
+            kind = "nc"  # neither major party listed
+        out[int(r["district"])] = kind
+    return out
+
+
+NO_CONTEST_TEXT = {
+    "nd": "no Democrat on the latest ballot",
+    "nr": "no Republican on the latest ballot",
+    "nc": "one candidate with no major-party label",
+}
+
+
 def district_map(chamber):
     shapes, recs = read_zip_shapefile(ZIPS[chamber])
     field = DISTRICT_FIELD[chamber]
     shares = latest_shares(chamber)
+    kinds = gray_kinds(chamber)
     parts = []
     lon_min = lat_min = float("inf")
     lon_max = lat_max = float("-inf")
@@ -250,12 +285,12 @@ def district_map(chamber):
     paths, labels = [], []
     for d, rings in sorted(parts):
         share = shares.get(d)
-        cls = step_class(share)
+        cls = step_class(share) if share is not None else kinds.get(d, "nc")
         is_target = (chamber, d) in TARGET_SET
         if is_target:
             cls += " tgt"
         if share is None:
-            tip = f"{CHAMBER_NAME[chamber]} {d}: no race between a Democrat and a Republican in the latest year"
+            tip = f"{CHAMBER_NAME[chamber]} {d}: " + NO_CONTEST_TEXT[kinds.get(d, "nc")]
         else:
             tip = f"{CHAMBER_NAME[chamber]} {d}: {share:.1f}% Democratic in the latest race"
         d_attr = " ".join(
@@ -297,6 +332,13 @@ svg.map text.tl { font: 600 10.5px var(--font-mono); fill: var(--ink); text-anch
 .scale { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font: 400 12.5px/1.4 var(--font-mono); color: var(--muted); margin: 0 0 18px; }
 .scale .strip { display: inline-flex; }
 .sw { display: inline-block; width: 14px; height: 12px; }
+.nd { fill: url(#hatch-rep); }
+.nr { fill: url(#hatch-dem); }
+.hl-bg { fill: var(--surface); }
+.hl-rep { stroke: var(--rep); }
+.hl-dem { stroke: var(--dem); }
+.sw.nd { background: repeating-linear-gradient(45deg, var(--rep) 0 2px, var(--surface) 2px 5px); }
+.sw.nr { background: repeating-linear-gradient(45deg, var(--dem) 0 2px, var(--surface) 2px 5px); }
 svg.map a { cursor: pointer; }
 svg.map a:hover path, svg.map a:focus-visible path { stroke: var(--ink); stroke-width: 1.2; }
 svg.map a:focus-visible { outline: none; }
@@ -490,13 +532,25 @@ page = f"""<meta name="claude:viewport-fit-sides" content="cover">
 
   <section aria-labelledby="maps">
     <h2 id="maps">Where the seats are</h2>
-    <p class="prose">Each district is filled by its latest Democratic share: 2026 where contested, otherwise 2024. Outlined districts are 2028 targets and carry their number. Gray districts had no race between a Democrat and a Republican in the latest year. Hover a district for its exact share.</p>
+    <p class="prose">Each district is filled by its latest Democratic share: 2026 where contested, otherwise 2024. Outlined districts are 2028 targets and carry their number. Hatched districts had no race between a Democrat and a Republican in the latest year: red hatch means no Democrat ran, blue hatch means no Republican ran. Hover a district for its exact share. Click a House district to open its Ballotpedia page.</p>
     <div class="scale" aria-hidden="true">
       <span>Republican</span>
       <span class="strip">{"".join(f'<i class="sw r{s}"></i>' for s in range(9, -1, -1))}{"".join(f'<i class="sw d{s}"></i>' for s in range(10))}</span>
       <span>Democratic</span>
-      <span><i class="sw nc"></i> No contest</span>
+      <span><i class="sw nd"></i> No Democrat on ballot</span>
+      <span><i class="sw nr"></i> No Republican on ballot</span>
+      <span><i class="sw nc"></i> Other</span>
     </div>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <pattern id="hatch-rep" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect class="hl-bg" width="6" height="6"/><line class="hl-rep" x1="0" y1="0" x2="0" y2="6" stroke-width="2"/>
+        </pattern>
+        <pattern id="hatch-dem" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect class="hl-bg" width="6" height="6"/><line class="hl-dem" x1="0" y1="0" x2="0" y2="6" stroke-width="2"/>
+        </pattern>
+      </defs>
+    </svg>
     <div class="maps">
       <figure class="mapfig">
         {district_map("house")}
